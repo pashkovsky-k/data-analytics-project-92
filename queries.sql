@@ -8,7 +8,7 @@ from customers;
 select
 	CONCAT(e.first_name, ' ', e.last_name) as seller,
 	COUNT(s.sales_id) as operations,
-	SUM(p.price * s.quantity) as income
+	ROUND(SUM(p.price * s.quantity), 0) as income
 from employees as e
 inner join sales as s
 	on s.sales_person_id = e.employee_id
@@ -42,7 +42,7 @@ order by average_income;
 select
 	CONCAT(e.first_name, ' ', e.last_name) as seller,
 	TO_CHAR(s.sale_date, 'FMday') as day_of_week,
-	ROUND(SUM(p.price * s.quantity), 2) as income
+	ROUND(SUM(p.price * s.quantity), 0) as income
 from employees as e
 inner join sales as s
 	on s.sales_person_id = e.employee_id
