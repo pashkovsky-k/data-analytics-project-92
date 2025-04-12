@@ -55,3 +55,65 @@ group by
 ORDER by
 	(CAST(DATE_PART('dow', s.sale_date) AS INT) + 6) % 7,
 	seller;
+
+/* age groups */
+
+select
+	case
+		when age between 16 and 25 then '16-25'
+		when age between 26 and 40 then '26-40'
+		when age > 40 then '40+'
+	end as age_category,
+	COUNT(age) as age_count
+from customers
+group by age_category
+order by age_category;
+
+/* customers by month */
+
+select
+	TO_CHAR(s.sale_date, 'YYYY.MM') as selling_month,
+	COUNT(s.customer_id) as total_customers,
+	ROUND(SUM(s.quantity * p.price), 0) as income
+from sales as s
+inner join products as p
+	on p.product_id = s.product_id
+group by selling_month
+order by selling_month;
+
+/* special offer */
+
+with first_sale as (
+	select
+		c.customer_id,
+		CONCAT(c.first_name, ' ', c.last_name) as customer,
+		FIRST_VALUE(s.sale_date) over (
+			partition by c.customer_id, e.employee_id
+			order by s.sale_date
+		) as sale_date,
+		CONCAT(e.first_name, ' ', e.last_name) as seller,
+		FIRST_VALUE(p.price) over (
+			partition by c.customer_id, e.employee_id
+			order by s.sale_date
+		) as first_price
+	from customers as c
+	inner join sales as s
+		on c.customer_id = s.customer_id
+	inner join employees as e
+		on e.employee_id = s.sales_person_id
+	inner join products as p
+		on p.product_id = s.product_id
+)
+
+select
+	customer,
+	sale_date,
+	seller
+from first_sale
+where first_price = 0
+group by
+	customer_id,
+	customer,
+	sale_date,
+	seller
+order by customer_id;
