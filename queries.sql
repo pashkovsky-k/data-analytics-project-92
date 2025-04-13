@@ -1,119 +1,120 @@
 /* customers_count */
 
-select COUNT(customer_id) as customers_count
-from customers;
+SELECT COUNT(customer_id) AS customers_count
+FROM customers;
 
 /* top 10 total income */
 
-select
-	CONCAT(e.first_name, ' ', e.last_name) as seller,
-	COUNT(s.sales_id) as operations,
-	ROUND(SUM(p.price * s.quantity), 0) as income
-from employees as e
-inner join sales as s
-	on s.sales_person_id = e.employee_id
-inner join products as p
-	on p.product_id = s.product_id
-group by seller
-order by income DESC
-limit 10;
+SELECT
+	CONCAT(e.first_name, ' ', e.last_name) AS seller,
+	COUNT(s.sales_id) AS operations,
+	ROUND(SUM(p.price * s.quantity), 0) AS income
+FROM employees AS e
+INNER JOIN sales AS s
+	ON e.employee_id = s.sales_person_id
+INNER JOIN products AS p
+	ON s.product_id = p.product_id
+GROUP BY seller
+ORDER BY income DESC
+LIMIT 10;
 
 /* lowest average income */
 
-select
-	CONCAT(e.first_name, ' ', e.last_name) as seller,
-	ROUND(SUM(p.price * s.quantity) / COUNT(s.sales_id), 0) as average_income
-from employees as e
-inner join sales as s
-	on s.sales_person_id = e.employee_id
-inner join products as p
-	on p.product_id = s.product_id
-group by seller
-having ROUND(SUM(p.price * s.quantity) / COUNT(s.sales_id), 0) < (
-	select ROUND(SUM(p.price * s.quantity) / COUNT(s.sales_id), 0)
-	from sales as s
-	inner join products as p
-		on p.product_id = s.product_id
-)
-order by average_income;
+SELECT
+	CONCAT(e.first_name, ' ', e.last_name) AS seller,
+	ROUND(SUM(p.price * s.quantity) / COUNT(s.sales_id), 0) AS average_income
+FROM employees AS e
+INNER JOIN sales AS s
+	ON e.employee_id = s.sales_person_id
+INNER JOIN products AS p
+	ON s.product_id = p.product_id
+GROUP BY seller
+HAVING
+	ROUND(SUM(p.price * s.quantity) / COUNT(s.sales_id), 0) < (
+		SELECT ROUND(SUM(products.price * sales.quantity) / COUNT(sales.sales_id), 0)
+		FROM sales
+		INNER JOIN products
+			ON s.product_id = products.product_id
+		)
+ORDER BY average_income;
 
 /* day of the week income */
 
-select
-	CONCAT(e.first_name, ' ', e.last_name) as seller,
-	TO_CHAR(s.sale_date, 'FMday') as day_of_week,
-	ROUND(SUM(p.price * s.quantity), 0) as income
-from employees as e
-inner join sales as s
-	on s.sales_person_id = e.employee_id
-inner join products as p
-	on p.product_id = s.product_id
-group by
+SELECT
+	CONCAT(e.first_name, ' ', e.last_name) AS seller,
+	TO_CHAR(s.sale_date, 'FMday') AS day_of_week,
+	ROUND(SUM(p.price * s.quantity), 0) AS income
+FROM employees AS e
+INNER JOIN sales AS s
+	ON e.employee_id = s.sales_person_id
+INNER JOIN products AS p
+	ON s.product_id = p.product_id
+GROUP BY
 	seller,
 	day_of_week,
 	(CAST(DATE_PART('dow', s.sale_date) AS INT) + 6) % 7
-ORDER by
+ORDER BY
 	(CAST(DATE_PART('dow', s.sale_date) AS INT) + 6) % 7,
 	seller;
 
 /* age groups */
 
-select
-	case
-		when age between 16 and 25 then '16-25'
-		when age between 26 and 40 then '26-40'
-		when age > 40 then '40+'
-	end as age_category,
-	COUNT(age) as age_count
-from customers
-group by age_category
-order by age_category;
+SELECT
+	CASE
+		WHEN age BETWEEN 16 AND 25 THEN '16-25'
+		WHEN age BETWEEN 26 AND 40 THEN '26-40'
+		WHEN age > 40 THEN '40+'
+	END AS age_category,
+	COUNT(age) AS age_count
+FROM customers
+GROUP BY age_category
+ORDER BY age_category;
 
 /* customers by month */
 
-select
-	TO_CHAR(s.sale_date, 'YYYY.MM') as selling_month,
-	COUNT(s.customer_id) as total_customers,
-	ROUND(SUM(s.quantity * p.price), 0) as income
-from sales as s
-inner join products as p
-	on p.product_id = s.product_id
-group by selling_month
-order by selling_month;
+SELECT
+	TO_CHAR(s.sale_date, 'YYYY.MM') AS selling_month,
+	COUNT(s.customer_id) AS total_customers,
+	ROUND(SUM(s.quantity * p.price), 0) AS income
+FROM sales AS s
+INNER JOIN products AS p
+	ON s.product_id = p.product_id
+GROUP BY selling_month
+ORDER BY selling_month;
 
 /* special offer */
 
-with first_sale as (
-	select
+WITH first_sale AS (
+	SELECT
 		c.customer_id,
-		CONCAT(c.first_name, ' ', c.last_name) as customer,
-		FIRST_VALUE(s.sale_date) over (
-			partition by c.customer_id, e.employee_id
-			order by s.sale_date
-		) as sale_date,
-		CONCAT(e.first_name, ' ', e.last_name) as seller,
-		FIRST_VALUE(p.price) over (
-			partition by c.customer_id, e.employee_id
-			order by s.sale_date
-		) as first_price
-	from customers as c
-	inner join sales as s
-		on c.customer_id = s.customer_id
-	inner join employees as e
-		on e.employee_id = s.sales_person_id
-	inner join products as p
-		on p.product_id = s.product_id
+		CONCAT(c.first_name, ' ', c.last_name) AS customer,
+		FIRST_VALUE(s.sale_date) OVER (
+			PARTITION BY c.customer_id, e.employee_id
+			ORDER BY s.sale_date
+		) AS sale_date,
+		CONCAT(e.first_name, ' ', e.last_name) AS seller,
+		FIRST_VALUE(p.price) OVER (
+			PARTITION BY c.customer_id, e.employee_id
+			ORDER BY s.sale_date
+		) AS first_price
+	FROM customers AS c
+	INNER JOIN sales AS s
+		ON c.customer_id = s.customer_id
+	INNER JOIN employees AS e
+		ON s.sales_person_id = e.employee_id
+	INNER JOIN products AS p
+		ON s.product_id = p.product_id
 )
 
-select
+SELECT
 	customer,
 	sale_date,
 	seller
-from first_sale
-where first_price = 0
-group by
+FROM first_sale
+WHERE first_price = 0
+GROUP BY
 	customer_id,
 	customer,
 	sale_date,
 	seller
-order by customer_id;
+ORDER BY customer_id;
