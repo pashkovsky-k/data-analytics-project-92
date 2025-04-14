@@ -8,7 +8,7 @@ FROM customers;
 SELECT
 	CONCAT(e.first_name, ' ', e.last_name) AS seller,
 	COUNT(s.sales_id) AS operations,
-	ROUND(SUM(p.price * s.quantity), 0) AS income
+	FLOOR(SUM(p.price * s.quantity)) AS income
 FROM employees AS e
 INNER JOIN sales AS s
 	ON e.employee_id = s.sales_person_id
@@ -22,7 +22,7 @@ LIMIT 10;
 
 SELECT
 	CONCAT(e.first_name, ' ', e.last_name) AS seller,
-	ROUND(SUM(p.price * s.quantity) / COUNT(s.sales_id), 0) AS average_income
+	FLOOR(SUM(p.price * s.quantity) / COUNT(s.sales_id)) AS average_income
 FROM employees AS e
 INNER JOIN sales AS s
 	ON e.employee_id = s.sales_person_id
@@ -43,7 +43,7 @@ ORDER BY average_income;
 SELECT
 	CONCAT(e.first_name, ' ', e.last_name) AS seller,
 	TO_CHAR(s.sale_date, 'FMday') AS day_of_week,
-	ROUND(SUM(p.price * s.quantity), 0) AS income
+	FLOOR(SUM(p.price * s.quantity)) AS income
 FROM employees AS e
 INNER JOIN sales AS s
 	ON e.employee_id = s.sales_person_id
@@ -74,8 +74,8 @@ ORDER BY age_category;
 
 SELECT
 	TO_CHAR(s.sale_date, 'YYYY-MM') AS selling_month,
-	COUNT(s.customer_id) AS total_customers,
-	ROUND(SUM(s.quantity * p.price), 0) AS income
+	COUNT(DISTINCT s.customer_id) AS total_customers,
+	FLOOR(SUM(s.quantity * p.price)) AS income
 FROM sales AS s
 INNER JOIN products AS p
 	ON s.product_id = p.product_id
